@@ -4,6 +4,7 @@
     declare global {
       interface Window {
         isElectron?: boolean;
+        API_BASE_URL?: string;
         // Bạn có thể thêm các API khác được expose qua contextBridge tại đây
         // electronAPI?: {
         //   getDbPath: () => Promise<string>;
@@ -17,6 +18,8 @@
     const API_BASE_URL = window.isElectron
       ? 'http://localhost:5000'
       : '';
+
+    window.API_BASE_URL = API_BASE_URL; 
 
     async function throwIfResNotOk(res: Response) {
       if (!res.ok) {

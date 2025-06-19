@@ -13,9 +13,9 @@ const buildMain = async () => {
     bundle: true,
     platform: 'node',
     outfile: 'dist/electron-main.js',
-    external: ['electron'], // Không bundle Electron vào main process
-    format: 'esm', // Electron Main Process vẫn là ES Module
-    tsconfig: 'tsconfig.json', // Sử dụng tsconfig của dự án
+    external: ['electron'],
+    format: 'esm',
+    tsconfig: 'tsconfig.json',
     treeShaking: true,
     sourcemap: process.env.NODE_ENV === 'development',
     define: {
@@ -30,8 +30,8 @@ const buildMain = async () => {
     entryPoints: ['server/index.ts'],
     bundle: true,
     platform: 'node',
-    outfile: 'dist/server/index.cjs', // THAY ĐỔI LỚN: Đổi thành .cjs
-    format: 'cjs', // Biên dịch backend sang CommonJS
+    outfile: 'dist/server/index.cjs',
+    format: 'cjs',
     tsconfig: 'tsconfig.json',
     treeShaking: true,
     sourcemap: process.env.NODE_ENV === 'development',
@@ -45,7 +45,7 @@ const buildMain = async () => {
   // Build preload.js (vẫn là CJS)
   await build({
     entryPoints: ['preload.js'],
-    bundle: true,
+    // REMOVE 'bundle: true' FROM HERE
     platform: 'node',
     outfile: 'dist/preload.js',
     format: 'cjs', // Preload script vẫn là CommonJS

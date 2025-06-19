@@ -7,7 +7,7 @@ import {
   type Bill, type InsertBill,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sql, sum, inArray, like } from "drizzle-orm"; // Đảm bảo 'like' được import
+import { eq, and, sql, sum, inArray, like } from "drizzle-orm";
 import { getVietnamCurrentIsoString } from "@shared/utils";
 
 export interface IStorage {
@@ -15,7 +15,7 @@ export interface IStorage {
   getTable(id: number): Promise<Table | undefined>;
   createTable(table: InsertTable): Promise<Table>;
   updateTableStatus(id: number, status: string): Promise<Table | undefined>;
-  deleteTable(id: boolean): Promise<boolean>; // Đã sửa kiểu dữ liệu để khớp với lớp DatabaseStorage
+  deleteTable(id: boolean): Promise<boolean>;
   getMenuCollections(): Promise<MenuCollection[]>;
   getMenuCollection(id: number): Promise<MenuCollection | undefined>;
   createMenuCollection(collection: InsertMenuCollection): Promise<MenuCollection>;
@@ -61,7 +61,7 @@ export class MemStorage implements IStorage {
   async getTable(id: number): Promise<Table | undefined> { return undefined; }
   async createTable(table: InsertTable): Promise<Table> { throw new Error("Not implemented"); }
   async updateTableStatus(id: number, status: string): Promise<Table | undefined> { return undefined; }
-  async deleteTable(id: boolean): Promise<boolean> { return false; } // Đã sửa kiểu dữ liệu để khớp với lớp DatabaseStorage
+  async deleteTable(id: boolean): Promise<boolean> { return false; }
   async getMenuCollections(): Promise<MenuCollection[]> { return []; }
   async getMenuCollection(id: number): Promise<MenuCollection | undefined> { return undefined; }
   async createMenuCollection(collection: InsertMenuCollection): Promise<MenuCollection> { throw new Error("Not implemented"); }
@@ -71,12 +71,12 @@ export class MemStorage implements IStorage {
   async getMenuItem(id: number): Promise<MenuItem | undefined> { return undefined; }
   async createMenuItem(item: InsertMenuItem): Promise<MenuItem> { throw new Error("Not implemented"); }
   async updateMenuItem(id: number, updates: Partial<MenuItem>): Promise<MenuItem | undefined> { return undefined; }
-  async deleteMenuItem(id: number): Promise<boolean> { return false; }
+  async deleteMenuItem(id: boolean): Promise<boolean> { return false; }
   async getOrders(): Promise<Order[]> { return []; }
   async getActiveOrderByTable(tableId: number): Promise<Order | undefined> { return undefined; }
   async getOrderById(id: number): Promise<Order | undefined> { throw new Error("Method not implemented."); }
   async createOrder(order: InsertOrder): Promise<Order> { throw new Error("Not implemented"); }
-  async updateOrder(id: number, updates: Partial<Omit<Order, 'id' | 'createdAt' | 'tableId' | 'tableName' | 'updatedAt'>>): Promise<Order | undefined> { throw new Error("Not implemented"); }
+  async updateOrder(id: number, updates: Partial<Omit<Order, 'id' | 'createdAt' | 'tableId' | 'tableName' | 'updatedAt'>>): Promise<Order | undefined> { throw new Error("Not implemented."); }
   async completeOrder(id: number, paymentMethod: string, discountAmount: number): Promise<Order | undefined> { throw new Error("Method not implemented."); }
   async getOrderItems(orderId: number): Promise<OrderItem[]> { return []; }
   async addOrderItem(item: InsertOrderItem): Promise<OrderItem> { throw new Error("Not implemented"); }
@@ -93,7 +93,7 @@ export class MemStorage implements IStorage {
     itemsToPay: { orderItemId: number; quantity: number }[],
     paymentMethod: string,
     partialDiscountAmount: number
-  ): Promise<Order | undefined> { throw new Error("Method not implemented."); }
+  ): Promise<Order | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -254,7 +254,7 @@ export class DatabaseStorage implements IStorage {
       }
 
       const currentOrderItems = tx.select().from(orderItems).where(eq(orderItems.orderId, orderId)).all();
-      
+
       let totalPartialPaymentAmount = 0;
       const itemsToDeleteIds: number[] = [];
 
@@ -389,7 +389,8 @@ export class DatabaseStorage implements IStorage {
         sql`${bills.createdAt} >= ${startOfQueryRange.toISOString()}`,
         sql`${bills.createdAt} < ${endOfQueryRange.toISOString()}`
       ));
-    console.log(`[Storage] getDailyRevenue: Found ${result[0]?.totalRevenue || 0} revenue.`);
+    console.log(`[Storage] getDailyRevenue: Kết quả thô Drizzle:`, result); // Log kết quả thô từ Drizzle
+    console.log(`[Storage] getDailyRevenue: Tổng doanh thu tìm thấy: ${result[0]?.totalRevenue || 0}.`);
     return result[0]?.totalRevenue || 0;
   }
 
@@ -413,7 +414,8 @@ export class DatabaseStorage implements IStorage {
       ))
       .groupBy(bills.tableName)
       .orderBy(bills.tableName);
-    console.log(`[Storage] getRevenueByTable: Found ${result.length} entries.`);
+    console.log(`[Storage] getRevenueByTable: Kết quả thô Drizzle:`, result); // Log kết quả thô từ Drizzle
+    console.log(`[Storage] getRevenueByTable: Tìm thấy ${result.length} mục. `);
     return result;
   }
 
@@ -434,7 +436,8 @@ export class DatabaseStorage implements IStorage {
       ));
     }
     const result = await query;
-    console.log(`[Storage] getBills: Found ${result.length} bills.`);
+    console.log(`[Storage] getBills: Kết quả thô Drizzle:`, result); // Log kết quả thô từ Drizzle
+    console.log(`[Storage] getBills: Tìm thấy ${result.length} bills.`);
     return result;
   }
 

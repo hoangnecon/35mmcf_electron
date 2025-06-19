@@ -1,27 +1,23 @@
-// hoangnecon/35mmcf/35mmcf-fa723ba3b9b96db36942ef1dc83a721ec6f65899/client/src/components/revenue-modal.tsx
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatVND, getUtcIsoStringForLocalDayStart } from "@/lib/utils"; // Import getUtcIsoStringForLocalDayStart
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { formatVND, getUtcIsoStringForLocalDayStart } from "@/lib/utils"; 
 import { X, Calendar, Download } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, addDays, startOfDay, isSameDay } from "date-fns"; // Đảm bảo import isSameDay
+import { format, addDays, startOfDay, isSameDay } from "date-fns"; 
 import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-// KHÔNG CẦN IMPORT zonedTimeToUtc TỪ ĐÂY NỮA
 
 interface RevenueModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialDate?: Date; // Thêm prop này
+  initialDate?: Date;
 }
 
-// Cập nhật interface để bao gồm discountAmount
 interface BillWithDetails extends any {
   items: {
     id: number;
@@ -30,37 +26,32 @@ interface BillWithDetails extends any {
     unitPrice: number;
     totalPrice: number;
   }[];
-  discountAmount?: number; // ĐÃ THÊM: discountAmount
+  discountAmount?: number;
 }
 
-// KHÔNG CẦN ĐỊNH NGHĨA TIME_ZONE NỮA NẾU KHÔNG DÙNG date-fns-tz
-
 export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueModalProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate || new Date()); // Sử dụng initialDate
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate || new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<'all' | 'Tiền mặt' | 'Chuyển khoản' >('all');
   const [selectedBillDetails, setSelectedBillDetails] = useState<BillWithDetails | null>(null);
 
-  // Cập nhật selectedDate khi initialDate thay đổi hoặc khi modal mở
   useEffect(() => {
     if (isOpen && initialDate) {
       setSelectedDate(initialDate);
     }
   }, [isOpen, initialDate]);
 
-
-  // Helper function: Lấy chuỗi ISO UTC đại diện cho bắt đầu ngày cục bộ TIẾP THEO
   const getUtcIsoStringForNextLocalDayStart = (date: Date | undefined) => {
     if (!date) return undefined;
-    const nextLocalDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1); // Ngày tiếp theo, 00:00:00 local
-    return nextLocalDayStart.toISOString(); // Ví dụ: 00:00:00 14/06 local sẽ là 17:00:00 13/06 UTC
+    const nextLocalDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+    return nextLocalDayStart.toISOString();
   }
 
   const { data: revenueByTable = [] } = useQuery({
-    queryKey: ["/api/revenue/by-table", getUtcIsoStringForLocalDayStart(selectedDate)], // Truyền chuỗi ISO đầy đủ
+    queryKey: ["/api/revenue/by-table", getUtcIsoStringForLocalDayStart(selectedDate)],
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
-      const dateParam = queryKey[1] ? `?date=${queryKey[1]}` : ''; // Server sẽ nhận chuỗi ISO đầy đủ
+      const dateParam = queryKey[1] ? `?date=${queryKey[1]}` : '';
       const response = await fetch(`/api/revenue/by-table${dateParam}`);
       if (!response.ok) {
         throw new Error("Failed to fetch revenue by table");
@@ -70,12 +61,12 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
   });
 
   const { data: dailyRevenueData } = useQuery({
-    queryKey: ["/api/revenue/daily", getUtcIsoStringForLocalDayStart(selectedDate)], // Truyền chuỗi ISO đầy đủ
+    queryKey: ["/api/revenue/daily", getUtcIsoStringForLocalDayStart(selectedDate)],
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
       const [_key, dateParam] = queryKey as [string, string | undefined];
       const url = dateParam ? `/api/revenue/daily?date=${dateParam}` : '/api/revenue/daily';
-      const response = await fetch("http://localhost:5000" + url); // Đảm bảo gọi đúng cổng
+      const response = await fetch(url); // Sử dụng đường dẫn tương đối
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(errorBody || "Failed to fetch daily revenue");
@@ -85,17 +76,17 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
   });
 
   const { data: bills = [] } = useQuery({
-    queryKey: ["/api/bills", getUtcIsoStringForLocalDayStart(selectedDate)], // Truyền chuỗi ISO đầy đủ cho start
+    queryKey: ["/api/bills", getUtcIsoStringForLocalDayStart(selectedDate)],
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
-      const startDateIso = queryKey[1]; // Đây là chuỗi ISO UTC cho bắt đầu ngày cục bộ
-      const endDateIso = getUtcIsoStringForNextLocalDayStart(selectedDate); // Lấy chuỗi ISO UTC cho bắt đầu ngày cục bộ tiếp theo
+      const startDateIso = queryKey[1];
+      const endDateIso = getUtcIsoStringForNextLocalDayStart(selectedDate);
 
       if (!startDateIso) {
         return [];
       }
 
-      const dateParams = `?startDate=${startDateIso}&endDate=${endDateIso}`; // Gửi chuỗi ISO đầy đủ làm tham số
+      const dateParams = `?startDate=${startDateIso}&endDate=${endDateIso}`;
       const response = await fetch(`/api/bills${dateParams}`);
       if (!response.ok) {
         console.error(`Frontend: Failed to fetch bills with status ${response.status}: ${await response.text()}`);
@@ -146,15 +137,12 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
 
   const isToday = selectedDate?.toDateString() === new Date().toDateString();
 
-  // HÀM XỬ LÝ XUẤT EXCEL
   const handleExportExcel = () => {
     const startDateIso = getUtcIsoStringForLocalDayStart(selectedDate);
     const endDateIso = getUtcIsoStringForNextLocalDayStart(selectedDate);
 
-    // Xây dựng URL tải xuống với các tham số ngày tháng
     const downloadUrl = `/api/reports/export-bills?startDate=${startDateIso}&endDate=${endDateIso}`;
     
-    // Mở trong một cửa sổ/tab mới để kích hoạt tải xuống
     window.open(downloadUrl, '_blank');
   };
 
@@ -187,7 +175,7 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
                 variant="ghost" 
                 size="sm" 
                 className="text-white hover:bg-white hover:bg-opacity-20"
-                onClick={handleExportExcel} // GÁN HÀM ONCLICK TẠI ĐÂY
+                onClick={handleExportExcel}
               >
                 <Download className="h-4 w-4 mr-2" />
                 Xuất Excel
@@ -251,7 +239,7 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
                       Phương thức TT
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Chiết khấu {/* ĐÃ THÊM */}
+                      Chiết khấu
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Tổng tiền
@@ -267,7 +255,7 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
                 <tbody className="bg-white divide-y divide-gray-200">
                   {billsToDisplay.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500"> {/* ĐÃ SỬA: colSpan */}
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         Chưa có bill nào trong ngày
                       </td>
                     </tr>
@@ -284,8 +272,8 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
                               {bill.paymentMethod}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold"> {/* ĐÃ THÊM */}
-                            {formatVND(bill.discountAmount || 0)} {/* ĐÃ THÊM */}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-semibold">
+                            {formatVND(bill.discountAmount || 0)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-primary font-semibold">
                             {formatVND(bill.totalAmount)}
@@ -296,8 +284,8 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <Button
                               size="sm"
-                              onClick={() => setSelectedBillDetails(bill)} // Truyền toàn bộ bill object
-                              disabled={!isBillToday} // Vô hiệu hóa nút nếu bill không phải của ngày hôm nay
+                              onClick={() => setSelectedBillDetails(bill)}
+                              disabled={!isBillToday}
                             >
                               {isBillToday ? "Xem chi tiết" : "Không có chi tiết (Ngày trước)"}
                             </Button>
