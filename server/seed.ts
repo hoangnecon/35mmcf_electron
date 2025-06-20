@@ -1,6 +1,5 @@
-// server/seed.ts
 import { db } from "./db";
-import { tables, menuItems, menuCollections } from "@shared/schema"; // Thêm menuCollections vào import
+import { tables, menuItems, menuCollections } from "@shared/schema";
 
 async function seedDatabase() {
   console.log("Seeding database...");
@@ -22,10 +21,9 @@ async function seedDatabase() {
     console.log(`Inserted ${allTables.length} tables`);
   }
 
-  // *** THÊM LOGIC SEED CHO MENU COLLECTIONS ***
   // Check if menu collections already exist
   const existingMenuCollections = await db.select().from(menuCollections);
-  let defaultCollectionId = 1; // Giả sử ID đầu tiên sẽ là 1
+  let defaultCollectionId = 1;
 
   if (existingMenuCollections.length === 0) {
     console.log("Seeding menu collections...");
@@ -56,53 +54,51 @@ async function seedDatabase() {
   
   if (existingMenuItems.length === 0) {
     console.log("Seeding menu items...");
-    // Cập nhật menuItemsData để sử dụng defaultCollectionId
     const menuItemsData = [
-      { 
-        name: 'Đen', price: 6400, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId // Sử dụng ID collection đã được xác định
-      },
-      { 
-        name: 'Đen SG', price: 20000, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      { 
-        name: 'Sữa', price: 15000, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      { 
-        name: 'Sữa SG', price: 25000, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      { 
-        name: 'Muối', price: 18000, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-            { 
-        name: 'CF Kẹo đường', price: 12000, category: 'Cà phê', 
-        imageUrl: 'https://scontent.fhan2-3.fna.fbcdn.net/v/t39.30808-6/375828618_828983451993983_239819946826678734_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFo1tiG4vv149kwgqm2iUutW_BSviK_tY5b8FK-Ir-1jlZ6iftehLihHE-noLNgggH2vRmerGw1GZOp3u9be9a2&_nc_ohc=H7jPw5qEtSEQ7kNvwFY2oX0&_nc_oc=Adk8CQDcsqPEzIfttBsc_CeQpQfEuhA84PTazjNI9J1GeGMX-2yAXwyov8haVfES9_Xnqzch_gU4BuLA4n2atMRH&_nc_zt=23&_nc_ht=scontent.fhan2-3.fna&_nc_gid=V77vXjq4ZQXHaHNYjzqXPw&oh=00_AfO1wpu5xGkwPyzDuZ9eS6PPD_q83-mkW6TXSQEc4217VA&oe=6855905A',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      { 
-        name: 'Bạc Xỉu', price: 12000, category: 'Cà phê', 
-        imageUrl: 'https://images.unsplash.com/photo-1571863533956-01c88e79957e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      {
-        name: 'Bạc Xỉu Muối', price: 12000, category: 'Cà phê', 
-        imageUrl: 'https://images.unsplash.com/photo-1571863533956-01c88e79957e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
-      { 
-        name: 'Bạc Xỉu Kẹo Đường', price: 12000, category: 'Cà phê', 
-        imageUrl: 'https://images.unsplash.com/photo-1571863533956-01c88e79957e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200',
-        available: 1, menuCollectionId: defaultCollectionId
-      },
+      { name: 'Bạc Xỉu', price: 25000, category: 'Cà phê', imageUrl:'https://via.placeholder.com/300x200' , available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Bạc Xỉu Kẹo Đường', price: 35000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Bạc Xỉu Muối', price: 28000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Bánh', price: 20000, category: 'Toping', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Bò Húc', price: 28000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Đen', price: 18000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Đen Sài Gòn', price: 22000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Kẹo Đường', price: 35000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Muối', price: 28000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Sữa', price: 20000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cà Phê Sữa Sài Gòn', price: 25000, category: 'Cà phê', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Cacao', price: 30000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollections: defaultCollectionId },
+      { name: 'Coca', price: 30000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Coca Xí Muội', price: 25000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Đá Me', price: 28000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Hướng Dương', price: 15000, category: 'Toping', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Ken Béo', price: 8000, category: 'Toping', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Kẹo Đường', price: 8000, category: 'Toping', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Nước Cam', price: 30000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Nước Chanh', price: 25000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Nước Chanh Sả Tắc', price: 25000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Nước Chanh Xí Muội', price: 28000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sâm Dứa Sữa', price: 25000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sữa Chua Dâu', price: 28000, category: 'Sữa chua', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sữa Chua Đá', price: 22000, category: 'Sữa chua', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sữa Chua Đào', price: 28000, category: 'Sữa chua', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sữa Chua Việt Quất', price: 28000, category: 'Sữa chua', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Sữa Tươi Kẹo Đường', price: 35000, category: 'Khác', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Thuốc Mèo', price: 20000, category: 'Toping', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Cam Quế', price: 28000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Chanh Dây', price: 25000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Chanh Dây Bạc Hà', price: 30000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Chanh Dây Xí Muội', price: 30000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Chanh Sả Tắc', price: 28000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Chanh Xí Muội', price: 28000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Đào', price: 30000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Đào Bạc Hà', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Đào Cam Sả', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Đào Kem Béo', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Gừng', price: 25000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Sữa Kẹo Đường', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Vải', price: 30000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Vải Bạc Hà', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
+      { name: 'Trà Vải Kem Béo', price: 35000, category: 'Trà', imageUrl: 'https://via.placeholder.com/300x200', available: 1, menuCollectionId: defaultCollectionId },
     ];
 
     await db.insert(menuItems).values(menuItemsData);
@@ -114,7 +110,7 @@ async function seedDatabase() {
 
 seedDatabase().catch(error => {
   console.error("Seeding failed:", error);
-  process.exit(1); // Thoát với mã lỗi nếu seeding thất bại
+  process.exit(1);
 });
 
 export { seedDatabase };

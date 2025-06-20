@@ -38,7 +38,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertMenuItemSchema, Table, MenuCollection, OrderItem as OrderItemType, MenuItem as MenuItemType, Order as OrderType } from "@shared/schema";
 import { z } from "zod";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient"; // Đảm bảo apiRequest đã được import
 
 const menuItemFormSchemaClient = insertMenuItemSchema.extend({
   available: z.number().min(0).max(1),
@@ -92,20 +92,23 @@ export default function PosPage() {
       }
       return response.json();
     },
+    staleTime: 0, // Đảm bảo luôn được coi là cũ để cập nhật tức thì
   });
 
+  // ĐÃ SỬA: Sử dụng apiRequest cho dailyRevenueData
   const { data: dailyRevenueData, isLoading: isLoadingDailyRevenue } = useQuery<DailyRevenueData>({
-    queryKey: ["/api/revenue/daily", getUtcIsoStringForLocalDayStart(selectedDateForRevenue)],
+    queryKey: ["dailyRevenuePos", getUtcIsoStringForLocalDayStart(selectedDateForRevenue)], // Thay đổi queryKey
     queryFn: async ({ queryKey }) => {
       const [_key, dateParam] = queryKey as [string, string | undefined];
-      const url = dateParam ? `/api/revenue/daily?date=${dateParam}` : '/api/revenue/daily';
-      const response = await apiRequest("GET", url);
+      const urlPath = dateParam ? `/api/revenue/daily?date=${dateParam}` : '/api/revenue/daily';
+      const response = await apiRequest("GET", urlPath); // SỬ DỤNG apiRequest
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(errorBody || "Failed to fetch daily revenue");
       }
       return response.json();
     },
+    staleTime: 0, // Đảm bảo luôn được coi là cũ để cập nhật tức thì
   });
 
   const {
@@ -116,7 +119,7 @@ export default function PosPage() {
   } = useQuery<(OrderType & { items: OrderItemType[] }) | null>({
     queryKey: ["/api/tables", selectedTableId, "active-order"],
     enabled: selectedTableId !== null,
-    staleTime: 0,
+    staleTime: 0, // Đảm bảo luôn được coi là cũ để cập nhật tức thì
     cacheTime: 5 * 60 * 1000,
     queryFn: async ({ queryKey }) => {
       const [_key, tableId] = queryKey as [string, number, string];
@@ -184,13 +187,14 @@ export default function PosPage() {
         }
       }
     },
+    staleTime: 0, // Đảm bảo luôn được coi là cũ để cập nhật tức thì
   });
 
   const { data: menuItems = [], isLoading: isLoadingMenuItems } = useQuery<MenuItemType[]>({
     queryKey: ["/api/menu-items", { collectionId: selectedCollectionId, searchTerm, category: selectedCategory }],
     queryFn: async ({ queryKey }) => {
       const [_key, { collectionId, searchTerm, category }] = queryKey as [string, { collectionId: number | null, searchTerm: string, category: string | null }];
-      let url = `/api/menu-items`;
+      let urlPath = `/api/menu-items`; // Thay đổi tên biến từ 'url' thành 'urlPath' cho rõ ràng
       const params = new URLSearchParams();
       if (collectionId !== null && collectionId !== undefined) {
         params.append("collectionId", collectionId.toString());
@@ -202,15 +206,16 @@ export default function PosPage() {
         params.append("category", category);
       }
       if (params.toString()) {
-        url += `?${params.toString()}`;
+        urlPath += `?${params.toString()}`;
       }
-      const response = await apiRequest("GET", url);
+      const response = await apiRequest("GET", urlPath); // SỬ DỤNG apiRequest
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return await response.json();
     },
     enabled: activeTab === 'menu',
+    staleTime: 0, // Đảm bảo luôn được coi là cũ để cập nhật tức thì
   });
 
   const createOrderMutation = useMutation<OrderType, Error, { tableId: number; tableName: string; status: string; total: number }>({
@@ -234,6 +239,10 @@ export default function PosPage() {
         title: "Đơn hàng mới",
         description: `Đã tạo đơn hàng mới cho bàn ${newOrderData.tableName}.`,
       });
+      // Invalidate các query doanh thu liên quan
+      queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+      queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+      queryClient.invalidateQueries({ queryKey: ["billsModal"] });
     },
     onError: (error: any) => {
       console.error("Order creation error:", error);
@@ -260,9 +269,9 @@ export default function PosPage() {
     onSuccess: (completedOrderData) => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/tables"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/revenue/daily"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/revenue/by-table"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/bills"] });
+      queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] }); // Doanh thu hàng ngày
+      queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] }); // Doanh thu theo bàn
+      queryClient.invalidateQueries({ queryKey: ["billsModal"] }); // Danh sách bills
       queryClient.invalidateQueries({ queryKey: ["/api/tables", completedOrderData.tableId, "active-order"] });
       if (selectedTableId === completedOrderData.tableId) {
         setSelectedTableId(null);
@@ -296,12 +305,16 @@ export default function PosPage() {
       return updatedOrder;
     },
     onSuccess: (updatedOrderData) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tables", selectedTableId, "active-order"] });
-      setActiveOrder(updatedOrderData);
-      toast({
-        title: "Thêm món thành công",
-        description: "Món ăn đã được thêm vào đơn hàng.",
-      });
+        queryClient.invalidateQueries({ queryKey: ["/api/tables", selectedTableId, "active-order"] });
+        setActiveOrder(updatedOrderData);
+        toast({
+            title: "Thêm món thành công",
+            description: "Món ăn đã được thêm vào đơn hàng.",
+        });
+        // Invalidate các query doanh thu liên quan
+        queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+        queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+        queryClient.invalidateQueries({ queryKey: ["billsModal"] });
     },
     onError: (error: any) => {
       console.error("Add item error:", error);
@@ -411,6 +424,10 @@ export default function PosPage() {
           title: "Cập nhật món thành công",
           description: `Đã tăng số lượng món ${menuItem.name} lên ${newQuantity}.`,
         });
+        // Invalidate các query doanh thu liên quan
+        queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+        queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+        queryClient.invalidateQueries({ queryKey: ["billsModal"] });
       } catch (error) {
         console.error("Error updating item quantity:", error);
         toast({
@@ -437,9 +454,8 @@ export default function PosPage() {
     }
   };
 
-  const categories = ["Trà", "Cà phê", "Topping", "Sữa chua"];
+  const categories = ["Trà", "Cà phê", "Topping", "Sữa chua", "Khác"];
   const selectedTableInfo = selectedTableId ? tables.find(t => t.id === selectedTableId) : null; // Đảm bảo khai báo duy nhất một lần
-
   const form = useForm<MenuItemFormData>({
     resolver: zodResolver(menuItemFormSchemaClient),
     defaultValues: {
@@ -471,6 +487,10 @@ export default function PosPage() {
       setShowMenuItemForm(false);
       form.reset({ name: "", price: 0, category: "", imageUrl: "", available: 1, menuCollectionId: selectedCollectionId });
       toast({ title: "Thành công", description: "Đã thêm món mới vào thực đơn" });
+      // Invalidate các query doanh thu liên quan
+      queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+      queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+      queryClient.invalidateQueries({ queryKey: ["billsModal"] });
     },
     onError: (error: any) => {
       console.error("Add menu item error:", error);
@@ -494,6 +514,10 @@ export default function PosPage() {
       setShowMenuItemForm(false);
       form.reset({ name: "", price: 0, category: "", imageUrl: "", available: 1, menuCollectionId: selectedCollectionId });
       toast({ title: "Thành công", description: "Đã cập nhật món ăn" });
+      // Invalidate các query doanh thu liên quan
+      queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+      queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+      queryClient.invalidateQueries({ queryKey: ["billsModal"] });
     },
     onError: (error: any) => {
       console.error("Update menu item error:", error);
@@ -513,6 +537,10 @@ export default function PosPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/menu-items", { collectionId: selectedCollectionId, searchTerm, category: selectedCategory }] });
       toast({ title: "Thành công", description: "Đã xóa món ăn khỏi thực đơn" });
+      // Invalidate các query doanh thu liên quan
+      queryClient.invalidateQueries({ queryKey: ["dailyRevenuePos"] });
+      queryClient.invalidateQueries({ queryKey: ["revenueByTableModal"] });
+      queryClient.invalidateQueries({ queryKey: ["billsModal"] });
     },
     onError: (error: any) => {
       console.error("Delete menu item error:", error);
@@ -787,14 +815,12 @@ export default function PosPage() {
                                   >
                                     <FormControl>
                                       <SelectTrigger>
-                                        <SelectValue placeholder="Chọn loại món" />
+                                        <SelectValue />
                                       </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
                                       {categories.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>
-                                          {cat}
-                                        </SelectItem>
+                                        <SelectItem key={cat} value={cat}> {cat} </SelectItem>
                                       ))}
                                     </SelectContent>
                                   </Select>

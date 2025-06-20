@@ -11,6 +11,7 @@ import { vi } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { apiRequest } from "@/lib/queryClient"; // Đảm bảo apiRequest đã được import
 
 interface RevenueModalProps {
   isOpen: boolean;
@@ -47,12 +48,14 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
     return nextLocalDayStart.toISOString();
   }
 
+  // ĐÃ SỬA: Sử dụng apiRequest cho revenueByTable
   const { data: revenueByTable = [] } = useQuery({
-    queryKey: ["/api/revenue/by-table", getUtcIsoStringForLocalDayStart(selectedDate)],
+    queryKey: ["revenueByTableModal", getUtcIsoStringForLocalDayStart(selectedDate)], // Thay đổi queryKey
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
       const dateParam = queryKey[1] ? `?date=${queryKey[1]}` : '';
-      const response = await fetch(`/api/revenue/by-table${dateParam}`);
+      const urlPath = `/api/revenue/by-table${dateParam}`;
+      const response = await apiRequest("GET", urlPath); // SỬ DỤNG apiRequest
       if (!response.ok) {
         throw new Error("Failed to fetch revenue by table");
       }
@@ -60,13 +63,14 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
     }
   });
 
+  // ĐÃ SỬA: Sử dụng apiRequest cho dailyRevenueData
   const { data: dailyRevenueData } = useQuery({
-    queryKey: ["/api/revenue/daily", getUtcIsoStringForLocalDayStart(selectedDate)],
+    queryKey: ["dailyRevenueModal", getUtcIsoStringForLocalDayStart(selectedDate)], // Thay đổi queryKey
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
       const [_key, dateParam] = queryKey as [string, string | undefined];
-      const url = dateParam ? `/api/revenue/daily?date=${dateParam}` : '/api/revenue/daily';
-      const response = await fetch(url); // Sử dụng đường dẫn tương đối
+      const urlPath = dateParam ? `/api/revenue/daily?date=${dateParam}` : '/api/revenue/daily';
+      const response = await apiRequest("GET", urlPath); // SỬ DỤNG apiRequest
       if (!response.ok) {
         const errorBody = await response.text();
         throw new Error(errorBody || "Failed to fetch daily revenue");
@@ -75,8 +79,9 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
     },
   });
 
+  // ĐÃ SỬA: Sử dụng apiRequest cho bills và bill items
   const { data: bills = [] } = useQuery({
-    queryKey: ["/api/bills", getUtcIsoStringForLocalDayStart(selectedDate)],
+    queryKey: ["billsModal", getUtcIsoStringForLocalDayStart(selectedDate)], // Thay đổi queryKey
     enabled: isOpen,
     queryFn: async ({ queryKey }) => {
       const startDateIso = queryKey[1];
@@ -87,7 +92,8 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
       }
 
       const dateParams = `?startDate=${startDateIso}&endDate=${endDateIso}`;
-      const response = await fetch(`/api/bills${dateParams}`);
+      const urlPath = `/api/bills${dateParams}`;
+      const response = await apiRequest("GET", urlPath); // SỬ DỤNG apiRequest
       if (!response.ok) {
         console.error(`Frontend: Failed to fetch bills with status ${response.status}: ${await response.text()}`);
         throw new Error("Failed to fetch bills");
@@ -95,7 +101,7 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
       const billsData = await response.json();
 
       const billsWithDetails = await Promise.all(billsData.map(async (bill: any) => {
-        const itemsResponse = await fetch(`/api/bills/${bill.id}/items`);
+        const itemsResponse = await apiRequest("GET", `/api/bills/${bill.id}/items`); // SỬ DỤNG apiRequest
         if (!itemsResponse.ok) {
           console.error(`Frontend: Failed to fetch items for bill ${bill.id}`);
           return { ...bill, items: [] };
@@ -143,7 +149,10 @@ export default function RevenueModal({ isOpen, onClose, initialDate }: RevenueMo
 
     const downloadUrl = `/api/reports/export-bills?startDate=${startDateIso}&endDate=${endDateIso}`;
     
-    window.open(downloadUrl, '_blank');
+    // THAY ĐỔI: Sử dụng window.location.href để tải file từ API backend
+    // Điều này sẽ gửi request thông qua apiRequest handler trong main process Electron
+    // hoặc proxy trong Vite dev server.
+    window.location.href = downloadUrl;
   };
 
   return (

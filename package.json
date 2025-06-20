@@ -15,7 +15,11 @@
     "electron-start-dev": "cross-env NODE_ENV=development tsx build-electron-main.ts && electron dist/electron-main.js",
     "electron-build": "npm run build && cross-env NODE_ENV=production tsx build-electron-main.ts && electron-builder",
     "start-electron": "electron dist/electron-main.js",
+    "electron-start-prod": "cross-env NODE_ENV=production DEBUG_PROD=true electron dist/electron-main.js",
     "postinstall": "electron-builder install-app-deps"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.6.0",
@@ -124,16 +128,27 @@
     "appId": "com.35mmcf.salesapp",
     "productName": "35mmCFSales",
     "files": [
-      "dist/**/*",
-      "package.json",
-      "preload.js"
+      "dist/electron-main.js",
+      "dist/preload.js",
+      "dist/server/**/*",
+      "package.json" 
     ],
-    "extraFiles": [
+    "extraFiles": [], 
+    "extraResources": [
       {
         "from": "drizzle.sqlite",
-        "to": "./drizzle.sqlite"
+        "to": "drizzle.sqlite"
+      },
+      {
+        "from": "dist/index.html",
+        "to": "index.html"
+      },
+      {
+        "from": "dist/assets",
+        "to": "assets"
       }
     ],
+    "npmRebuild": true,
     "directories": {
       "output": "release"
     }

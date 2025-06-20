@@ -10,7 +10,7 @@ const appRootPath = path.dirname(__filename); // dist/ (sau khi build)
 
 let backendProcess: ReturnType<typeof fork> | null = null;
 let mainWindow: BrowserWindow | null = null;
-// let dbPath: string; // Loại bỏ dòng này
+let dbPath: string; // Đường dẫn đến database trong thư mục userData
 
 // Hàm khởi tạo cửa sổ chính của Electron
 async function createWindow() {
@@ -23,22 +23,42 @@ async function createWindow() {
       preload: path.join(appRootPath, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: process.env.NODE_ENV !== 'development',
-      devTools: process.env.NODE_ENV === 'development',
+      devTools: process.env.NODE_ENV === 'development', // Đặt lại cho production
+      additionalArguments: [
+        '--is-electron-build',
+        process.env.NODE_ENV === 'production' ? '--is-production-env' : '--is-development-env',
+      ],
     },
+    autoHideMenuBar: true,
   });
 
+  // ĐÃ SỬA: Tải index.html dựa trên việc ứng dụng có được đóng gói hay không
   if (process.env.NODE_ENV === 'development') {
+    // Development mode (Vite dev server)
     mainWindow.loadURL('http://localhost:5173').catch(err => {
       console.error('Failed to load Vite dev server:', err);
     });
   } else {
-    mainWindow.loadFile(path.join(appRootPath, 'public', 'index.html')).catch(err => {
+    // Production mode (either unpacked dist or packed .exe)
+    let pathToIndexHtml: string;
+    if (app.isPackaged) {
+      // Chạy từ bản .exe đã đóng gói (index.html nằm trong thư mục resources/)
+      pathToIndexHtml = path.join(process.resourcesPath, 'index.html');
+      console.log(`[Electron Main] Loading packaged index.html from: ${pathToIndexHtml}`);
+    } else {
+      // Chạy "npm run electron-start-prod" (từ thư mục dist/ chưa đóng gói)
+      // index.html nằm ngay trong thư mục dist/ (app.getAppPath() trỏ đến dist/)
+      pathToIndexHtml = path.join(app.getAppPath(), 'index.html');
+      console.log(`[Electron Main] Loading unpacked index.html from: ${pathToIndexHtml}`);
+    }
+    
+    mainWindow.loadFile(pathToIndexHtml).catch(err => {
       console.error('Failed to load production HTML file:', err);
     });
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  // Luôn mở devtools khi debug bản build
+  if (process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true') {
     mainWindow.webContents.openDevTools();
   }
 
@@ -76,24 +96,29 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Loại bỏ hoàn toàn logic sao chép database vào userData
-  // const userDataPath = app.getPath('userData');
-  // const dbFileName = 'drizzle.sqlite';
-  // dbPath = path.join(userDataPath, dbFileName);
+  const userDataPath = app.getPath('userData');
+  const dbFileName = 'drizzle.sqlite';
+  dbPath = path.join(userDataPath, dbFileName);
 
-  // if (process.env.NODE_ENV === 'production') {
-  //   const bundledDbPath = path.join(process.resourcesPath, 'app', dbFileName);
-  //   if (!fs.existsSync(dbPath)) {
-  //     try {
-  //       fs.copyFileSync(bundledDbPath, dbPath);
-  //       console.log(`[Electron Main] Database copied from ${bundledDbPath} to ${dbPath}`);
-  //     } catch (error) {
-  //       console.error(`[Electron Main] Failed to copy database: ${error.message}`);
-  //       app.quit();
-  //       return;
-  //     }
-  //   }
-  // }
+  if (process.env.NODE_ENV === 'production') {
+    // Sử dụng process.resourcesPath để tìm file database bên ngoài ASAR
+    const bundledDbPath = path.join(process.resourcesPath, dbFileName);
+    if (!fs.existsSync(dbPath)) {
+      try {
+        fs.copyFileSync(bundledDbPath, dbPath);
+        console.log(`[Electron Main] Database copied from ${bundledDbPath} to ${dbPath}`);
+      } catch (error: any) {
+        console.error(`[Electron Main] Failed to copy database: ${error.message}`);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.executeJavaScript(`alert('Failed to initialize database: ${error.message}. Application will exit.');`)
+                .finally(() => app.quit());
+        } else {
+            app.quit();
+        }
+        return;
+      }
+    }
+  }
 
   const backendEntry = path.join(appRootPath, 'server', 'index.cjs');
   backendProcess = fork(backendEntry, [], {
@@ -101,8 +126,8 @@ app.whenReady().then(async () => {
     env: {
       ...process.env,
       NODE_ENV: process.env.NODE_ENV,
-      // Loại bỏ việc truyền ELECTRON_DB_PATH
-      // ELECTRON_DB_PATH: dbPath,
+      ELECTRON_DB_PATH: dbPath,
+      IS_ELECTRON_BUILD: 'true',
     },
   });
 
@@ -117,6 +142,9 @@ app.whenReady().then(async () => {
 
   backendProcess.on('error', (err) => {
     console.error(`[Electron Main] Failed to start backend process: ${err.message}`);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.executeJavaScript(`alert('Failed to start backend: ${err.message}. Please restart the application.');`);
+    }
   });
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -124,9 +152,9 @@ app.whenReady().then(async () => {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:*;`,
-          `connect-src 'self' http://localhost:*;`,
-          `img-src 'self' data: blob: https://*;`
+          `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* file:;`,
+          `connect-src 'self' http://localhost:* ws://localhost:*;`,
+          `img-src 'self' data: blob: https:*;`
         ],
       },
     });

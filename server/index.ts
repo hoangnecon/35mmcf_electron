@@ -1,3 +1,4 @@
+// server/index.ts
 import express, { type Express, type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
@@ -17,8 +18,13 @@ export function log(message: string, source = "express") {
 const app = express();
 
 // Thêm middleware CORS
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? ['http://localhost:5173', null] // Thêm 'null' cho các yêu cầu từ file:// origin trong production Electron
+  : ['http://localhost:5173']; // Chỉ cho phép Vite dev server trong phát triển
+
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: allowedOrigins,
+  credentials: true, // Quan trọng để gửi cookies/session
 }));
 
 app.use(express.json());
